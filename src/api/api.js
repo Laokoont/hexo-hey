@@ -1,34 +1,68 @@
 'use strict';
 
-import fs from 'fs';
-import jwt from 'jsonwebtoken';
-import jwtExpress from 'express-jwt';
-import connectRoute from 'connect-route';
-import multer from 'multer';
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _fs = require('fs');
+
+var _fs2 = _interopRequireDefault(_fs);
+
+var _jsonwebtoken = require('jsonwebtoken');
+
+var _jsonwebtoken2 = _interopRequireDefault(_jsonwebtoken);
+
+var _expressJwt = require('express-jwt');
+
+var _expressJwt2 = _interopRequireDefault(_expressJwt);
+
+var _connectRoute = require('connect-route');
+
+var _connectRoute2 = _interopRequireDefault(_connectRoute);
+
+var _multer = require('multer');
+
+var _multer2 = _interopRequireDefault(_multer);
+
+var deleteFolderRecursive = function(path) {
+  if( _fs.existsSync(path) ) {
+    _fs.readdirSync(path).forEach(function(file,index){
+      var curPath = path + "/" + file;
+      if(_fs.lstatSync(curPath).isDirectory()) { // recurse
+        deleteFolderRecursive(curPath);
+      } else { // delete file
+        _fs.unlinkSync(curPath);
+      }
+    });
+    _fs.rmdirSync(path);
+  }
+};
 
 function router(api, hexo) {
-  let Post = hexo.model('Post');
-  let Tag = hexo.model('Tag');
-  let Category = hexo.model('Category');
+  var Post = hexo.model('Post');
+  var Tag = hexo.model('Tag');
+  var Category = hexo.model('Category');
 
-  api.post('/login', (req, res) => {
-    let name = req.body.name;
-    let password = req.body.password;
-    let user = hexo.config.admin;
+  api.post('/login', function (req, res) {
+    var name = req.body.name;
+    var password = req.body.password;
+    var user = hexo.config.admin;
     if (name === user.name && password === user.password) {
-      let token = jwt.sign(user.password, user.secret, {
+      var token = _jsonwebtoken2['default'].sign(user.password, user.secret, {
         expiresInMinutes: user.expire
       });
       res.json({
-        token
+        token: token
       });
     } else {
       res.status(400).send('Error name or password');
     }
   });
 
-  api.get('/posts', (req, res) => {
-    let posts = Post.sort('-date').toArray().map(post => {
+  api.get('/posts', function (req, res) {
+    var posts = Post.sort('-date').toArray().map(function (post) {
       return {
         id: post._id,
         title: post.title,
@@ -36,18 +70,22 @@ function router(api, hexo) {
         layout: post.layout,
         link: post.permalink,
         published: post.published,
-        categories: post.categories.toArray().map(category => category.name),
-        tags: post.tags.toArray().map(tag => tag.name),
+        categories: post.categories.toArray().map(function (category) {
+          return category.name;
+        }),
+        tags: post.tags.toArray().map(function (tag) {
+          return tag.name;
+        }),
         date: post.date
       };
     });
     res.json(posts);
   });
 
-  api.get('/posts/:slug', (req, res) => {
-    let slug = req.params.slug;
-    let post = Post.findOne({
-      slug
+  api.get('/posts/:slug', function (req, res) {
+    var slug = req.params.slug;
+    var post = Post.findOne({
+      slug: slug
     });
     if (!post) {
       return res.status(404).send('Post not found');
@@ -60,39 +98,43 @@ function router(api, hexo) {
       link: post.permalink,
       published: post.published,
       content: post._content,
-      categories: post.categories.toArray().map(category => category.name),
-      tags: post.tags.toArray().map(tag => tag.name),
+      categories: post.categories.toArray().map(function (category) {
+        return category.name;
+      }),
+      tags: post.tags.toArray().map(function (tag) {
+        return tag.name;
+      }),
       date: post.date,
       excerpt: post.excerpt
     };
     res.json(post);
   });
 
-  api.post('/posts', (req, res) => {
+  api.post('/posts', function (req, res) {
     if (req.body.id) {
-      let id = req.body.id;
-      let post = Post.get(id);
-      if (!post) {
+      var id = req.body.id;
+      var _post = Post.get(id);
+      if (!_post) {
         return res.status(404).send('Post not found');
       }
-      let stats = fs.statSync(post.full_source);
+      var stats = _fs2['default'].statSync(_post.full_source);
       if (stats.isFile()) {
-        fs.unlinkSync(post.full_source);
+        _fs2['default'].unlinkSync(_post.full_source);
       }
     }
-    let post = {
+    var post = {
       title: req.body.title,
       slug: req.body.slug,
       content: req.body.content,
       layout: req.body.layout,
       date: req.body.date,
       categories: req.body.categories,
-      tags: req.body.tags,
+      tags: req.body.tags
     };
-    hexo.post.create(post).then(data => {
-      let source = data.path.slice(hexo.source_dir.length);
-      hexo.source.process(source).then(() => {
-        let post = Post.findOne({
+    hexo.post.create(post).then(function (data) {
+      var source = data.path.slice(hexo.source_dir.length);
+      hexo.source.process(source).then(function () {
+        var post = Post.findOne({
           slug: req.body.slug
         });
         post = {
@@ -103,106 +145,111 @@ function router(api, hexo) {
           link: post.permalink,
           published: post.published,
           content: post._content,
-          categories: post.categories.toArray().map(category => category.name),
-          tags: post.tags.toArray().map(tag => tag.name),
+          categories: post.categories.toArray().map(function (category) {
+            return category.name;
+          }),
+          tags: post.tags.toArray().map(function (tag) {
+            return tag.name;
+          }),
           date: post.date,
           excerpt: post.excerpt
         };
         res.json(post);
-      }).catch(err => {
+      })['catch'](function (err) {
         console.log(err);
         res.status(500).send('Failed to create post');
       });
-    }).catch(err => {
+    })['catch'](function (err) {
       console.log(err);
       res.status(500).send('Failed to create post');
     });
   });
 
-  api.delete('/posts/:id', (req, res) => {
-    let id = req.params.id;
-    let post = Post.get(id);
+  api['delete']('/posts/:id', function (req, res) {
+    var id = req.params.id;
+    var post = Post.get(id);
     if (!post) {
       return res.status(404).send('Post not found');
     }
-    fs.unlinkSync(hexo.source_dir + post.source);
+    _fs2['default'].unlinkSync(hexo.source_dir + post.source);
+    deleteFolderRecursive((hexo.source_dir + post.source).replace(/\.md$/, '/'));
 
-    hexo.source.process().then(() => {
+    hexo.source.process().then(function () {
       res.status(200).send('Post deleted');
-    }).catch(err => {
+    })['catch'](function (err) {
       console.log(err);
       res.status(500).send('Failed to delete post');
     });
   });
 
-  api.get('/categories', (req, res) => {
-    let categories = Category.toArray().map(category => {
+  api.get('/categories', function (req, res) {
+    var categories = Category.toArray().map(function (category) {
       return category.name;
     });
     res.json(categories);
   });
 
-  api.get('/tags', (req, res) => {
-    let tags = Tag.toArray().map(tag => {
+  api.get('/tags', function (req, res) {
+    var tags = Tag.toArray().map(function (tag) {
       return tag.name;
     });
     res.json(tags);
   });
 
-  api.get('/config', (req, res) => {
-    let hexoConfigPath = hexo.config_path;
-    let hexoConfig = fs.readFileSync(hexoConfigPath, 'utf8');
+  api.get('/config', function (req, res) {
+    var hexoConfigPath = hexo.config_path;
+    var hexoConfig = _fs2['default'].readFileSync(hexoConfigPath, 'utf8');
 
-    let themeConfigPath = hexo.theme_dir + '_config.yml';
-    let themeConfig = fs.readFileSync(themeConfigPath, 'utf8');
+    var themeConfigPath = hexo.theme_dir + '_config.yml';
+    var themeConfig = _fs2['default'].readFileSync(themeConfigPath, 'utf8');
     res.json({
-      hexoConfig,
-      themeConfig
+      hexoConfig: hexoConfig,
+      themeConfig: themeConfig
     });
   });
 
-  api.post('/config', (req, res) => {
-    let hexoConfig = req.body.hexoConfig;
-    let themeConfig = req.body.themeConfig;
-    let themeConfigPath = hexo.theme_dir + '_config.yml';
-    fs.writeFileSync(themeConfigPath, themeConfig, 'utf8');
+  api.post('/config', function (req, res) {
+    var hexoConfig = req.body.hexoConfig;
+    var themeConfig = req.body.themeConfig;
+    var themeConfigPath = hexo.theme_dir + '_config.yml';
+    _fs2['default'].writeFileSync(themeConfigPath, themeConfig, 'utf8');
     res.json({
-      hexoConfig,
-      themeConfig
+      hexoConfig: hexoConfig,
+      themeConfig: themeConfig
     });
   });
 
-  fs.stat(hexo.source_dir + 'images/', (err) => {
+  _fs2['default'].stat(hexo.source_dir + 'images/', function (err) {
     if (err) {
-      fs.mkdirSync(hexo.source_dir + 'images/');
+      _fs2['default'].mkdirSync(hexo.source_dir + 'images/');
     }
   });
-  let storage = multer.diskStorage({
-    destination: (req, file, cb) => {
+  var storage = _multer2['default'].diskStorage({
+    destination: function destination(req, file, cb) {
       cb(null, hexo.source_dir);
     },
-    filename: (req, file, cb) => {
-      let ext = file.originalname.substring(file.originalname.lastIndexOf('.')) || '.png';
-      let filename = 'images/' + Date.now() + ext;
+    filename: function filename(req, file, cb) {
+      var ext = file.originalname.substring(file.originalname.lastIndexOf('.')) || '.png';
+      var filename = 'images/' + Date.now() + ext;
       cb(null, filename);
     }
   });
-  let upload = multer({
+  var upload = (0, _multer2['default'])({
     storage: storage
   }).single('file');
-  api.post('/upload', (req, res) => {
-    upload(req, res, (err) => {
+  api.post('/upload', function (req, res) {
+    upload(req, res, function (err) {
       if (err) {
         res.status(400).json({
           error: 'Error while uploading file'
         });
         return;
       }
-      hexo.source.process(req.file.filename).then(() => {
+      hexo.source.process(req.file.filename).then(function () {
         res.json({
           filename: hexo.config.url + '/' + req.file.filename
         });
-      }).catch(() => {
+      })['catch'](function () {
         res.status(400).json({
           error: 'Error while processing file'
         });
@@ -211,15 +258,15 @@ function router(api, hexo) {
   });
 }
 
-export default function(app, hexo) {
+exports['default'] = function (app, hexo) {
 
-  app.use('/api', jwtExpress({
+  app.use('/api', (0, _expressJwt2['default'])({
     secret: hexo.config.admin.secret
   }).unless({
     path: ['/api/login']
   }));
 
-  app.use((err, req, res, next) => {
+  app.use(function (err, req, res, next) {
     if (err.name === 'UnauthorizedError') {
       return res.status(401).send('Unauthorized');
     } else if (err) {
@@ -228,7 +275,9 @@ export default function(app, hexo) {
     return next();
   });
 
-  return connectRoute(api => {
+  return (0, _connectRoute2['default'])(function (api) {
     router(api, hexo);
   });
-}
+};
+
+module.exports = exports['default'];
